@@ -1,398 +1,422 @@
-import { useState, useEffect } from 'react'
-import { useAuth } from '../contexts/AuthContext'
-import '../styles/Products.css'
+import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import "../styles/Products.css";
 
 // Categories mapped from ProductType enum
 const CATEGORIES = [
-  { id: 'visi', name: 'Visi produktai', icon: '🏥', type: null },
-  { id: 'Food', name: 'Maistas', icon: '🥘', type: 0 },
-  { id: 'Supplements', name: 'Papildai', icon: '💊', type: 1 },
-  { id: 'Hygiene', name: 'Higiena', icon: '🧴', type: 2 },
-  { id: 'Medicine', name: 'Vaistai', icon: '💉', type: 3 }
-]
+  { id: "visi", name: "Visi produktai", icon: "🏥", type: null },
+  { id: "Food", name: "Maistas", icon: "🥘", type: 0 },
+  { id: "Supplements", name: "Papildai", icon: "💊", type: 1 },
+  { id: "Hygiene", name: "Higiena", icon: "🧴", type: 2 },
+  { id: "Medicine", name: "Vaistai", icon: "💉", type: 3 },
+];
 
 // Role types matching backend enum
 const ROLE_TYPES = {
   Administrator: 0,
   Veterinarian: 1,
-  Client: 2
-}
+  Client: 2,
+};
 
 const Products = () => {
-  const { user, isAuthenticated } = useAuth()
-  const [products, setProducts] = useState([])
-  const [filteredProducts, setFilteredProducts] = useState([])
-  const [selectedCategory, setSelectedCategory] = useState('visi')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState('name')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [selectedProduct, setSelectedProduct] = useState(null)
-  const [productIdFromUrl, setProductIdFromUrl] = useState(null)
-  
+  const { user, isAuthenticated } = useAuth();
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("visi");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("name");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [productIdFromUrl, setProductIdFromUrl] = useState(null);
+
   // Admin state
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [editingProduct, setEditingProduct] = useState(null)
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
-    name: '',
+    name: "",
     type: 0,
-    description: '',
-    photoUrl: '',
-    manufacturer: ''
-  })
-  const [saving, setSaving] = useState(false)
-  const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
-  const [uploading, setUploading] = useState(false)
+    description: "",
+    photoUrl: "",
+    manufacturer: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   // Check if user is admin
-  const isAdmin = isAuthenticated && user?.role === ROLE_TYPES.Administrator
+  const isAdmin = isAuthenticated && user?.role === ROLE_TYPES.Administrator;
 
   // Get auth token
   const getAuthToken = () => {
-    return localStorage.getItem('auth_token')
-  }
+    return localStorage.getItem("auth_token");
+  };
 
   // Check URL for product ID on mount and handle browser back/forward
   useEffect(() => {
     const checkUrlForProduct = () => {
-      const params = new URLSearchParams(window.location.search)
-      const productId = params.get('product')
-      setProductIdFromUrl(productId)
-    }
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get("product");
+      setProductIdFromUrl(productId);
+    };
 
-    checkUrlForProduct()
+    checkUrlForProduct();
 
     // Listen for browser back/forward navigation
-    window.addEventListener('popstate', checkUrlForProduct)
-    return () => window.removeEventListener('popstate', checkUrlForProduct)
-  }, [])
+    window.addEventListener("popstate", checkUrlForProduct);
+    return () => window.removeEventListener("popstate", checkUrlForProduct);
+  }, []);
 
   // When products are loaded and there's a product ID in URL, select that product
   useEffect(() => {
     if (productIdFromUrl && products.length > 0) {
-      const product = products.find(p => p.id === productIdFromUrl)
+      const product = products.find((p) => p.id === productIdFromUrl);
       if (product) {
-        setSelectedProduct(product)
+        setSelectedProduct(product);
       }
     }
-  }, [productIdFromUrl, products])
+  }, [productIdFromUrl, products]);
 
   // Handle selecting a product - update URL
   const handleSelectProduct = (product) => {
-    setSelectedProduct(product)
-    const newUrl = `${window.location.pathname}?product=${product.id}`
-    window.history.pushState({ productId: product.id }, '', newUrl)
-  }
+    setSelectedProduct(product);
+    const newUrl = `${window.location.pathname}?product=${product.id}`;
+    window.history.pushState({ productId: product.id }, "", newUrl);
+  };
 
   // Handle going back to product list - update URL
   const handleBackToList = () => {
-    setSelectedProduct(null)
-    window.history.pushState({}, '', window.location.pathname)
-  }
+    setSelectedProduct(null);
+    window.history.pushState({}, "", window.location.pathname);
+  };
 
   // Fetch products from API
   const fetchProducts = async () => {
     try {
-      setLoading(true)
-      const response = await fetch('http://localhost:5068/api/Product')
+      setLoading(true);
+      const response = await fetch("http://localhost:5068/api/Product");
       if (!response.ok) {
-        throw new Error('Nepavyko gauti produktų')
+        throw new Error("Nepavyko gauti produktų");
       }
-      const data = await response.json()
-      setProducts(data)
-      setFilteredProducts(data)
+      const data = await response.json();
+      setProducts(data);
+      setFilteredProducts(data);
     } catch (err) {
-      setError(err.message)
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchProducts()
-  }, [])
+    fetchProducts();
+  }, []);
 
   // Get ProductType name from enum value
   const getTypeName = (typeValue) => {
-    const category = CATEGORIES.find(c => c.type === typeValue)
-    return category ? category.name : 'Kita'
-  }
+    const category = CATEGORIES.find((c) => c.type === typeValue);
+    return category ? category.name : "Kita";
+  };
 
   // Filter products
   useEffect(() => {
-    let filtered = [...products]
+    let filtered = [...products];
 
     // Filter by category
-    if (selectedCategory !== 'visi') {
-      const category = CATEGORIES.find(c => c.id === selectedCategory)
+    if (selectedCategory !== "visi") {
+      const category = CATEGORIES.find((c) => c.id === selectedCategory);
       if (category) {
-        filtered = filtered.filter(product => product.type === category.type)
+        filtered = filtered.filter((product) => product.type === category.type);
       }
     }
 
     // Filter by search
     if (searchTerm) {
-      filtered = filtered.filter(product =>
-        product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.manufacturer?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      filtered = filtered.filter(
+        (product) =>
+          product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.description
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          product.manufacturer?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
 
     // Sort
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case 'name':
-          return (a.name || '').localeCompare(b.name || '')
-        case 'manufacturer':
-          return (a.manufacturer || '').localeCompare(b.manufacturer || '')
-        case 'type':
-          return (a.type || 0) - (b.type || 0)
+        case "name":
+          return (a.name || "").localeCompare(b.name || "");
+        case "manufacturer":
+          return (a.manufacturer || "").localeCompare(b.manufacturer || "");
+        case "type":
+          return (a.type || 0) - (b.type || 0);
         default:
-          return 0
+          return 0;
       }
-    })
+    });
 
-    setFilteredProducts(filtered)
-  }, [products, selectedCategory, searchTerm, sortBy])
+    setFilteredProducts(filtered);
+  }, [products, selectedCategory, searchTerm, sortBy]);
 
   // Admin functions
   const handleAddProduct = () => {
     setFormData({
-      name: '',
+      name: "",
       type: 0,
-      description: '',
-      photoUrl: '',
-      manufacturer: ''
-    })
-    setImageFile(null)
-    setImagePreview(null)
-    setShowAddModal(true)
-  }
+      description: "",
+      photoUrl: "",
+      manufacturer: "",
+    });
+    setImageFile(null);
+    setImagePreview(null);
+    setShowAddModal(true);
+  };
 
   const handleEditProduct = (product, e) => {
-    e.stopPropagation()
-    setEditingProduct(product)
+    e.stopPropagation();
+    setEditingProduct(product);
     setFormData({
-      name: product.name || '',
+      name: product.name || "",
       type: product.type || 0,
-      description: product.description || '',
-      photoUrl: product.photoUrl || '',
-      manufacturer: product.manufacturer || ''
-    })
-    setImageFile(null)
-    setImagePreview(product.photoUrl ? getImageUrl(product.photoUrl) : null)
-    setShowEditModal(true)
-  }
+      description: product.description || "",
+      photoUrl: product.photoUrl || "",
+      manufacturer: product.manufacturer || "",
+    });
+    setImageFile(null);
+    setImagePreview(product.photoUrl ? getImageUrl(product.photoUrl) : null);
+    setShowEditModal(true);
+  };
 
   const handleDeleteProduct = async (product, e) => {
-    e.stopPropagation()
-    if (!window.confirm(`Ar tikrai norite ištrinti produktą "${product.name}"?`)) {
-      return
+    e.stopPropagation();
+    if (
+      !window.confirm(`Ar tikrai norite ištrinti produktą "${product.name}"?`)
+    ) {
+      return;
     }
 
     try {
-      const token = getAuthToken()
-      const response = await fetch(`http://localhost:5068/api/Product/${product.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const token = getAuthToken();
+      const response = await fetch(
+        `http://localhost:5068/api/Product/${product.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      })
+      );
 
       if (!response.ok) {
-        throw new Error('Nepavyko ištrinti produkto')
+        throw new Error("Nepavyko ištrinti produkto");
       }
 
-      await fetchProducts()
-      alert('Produktas sėkmingai ištrintas!')
+      await fetchProducts();
+      alert("Produktas sėkmingai ištrintas!");
     } catch (err) {
-      alert('Klaida: ' + err.message)
+      alert("Klaida: " + err.message);
     }
-  }
+  };
 
   const handleSubmitAdd = async (e) => {
-    e.preventDefault()
-    setSaving(true)
+    e.preventDefault();
+    setSaving(true);
 
     try {
-      const token = getAuthToken()
-      let photoUrl = formData.photoUrl
+      const token = getAuthToken();
+      let photoUrl = formData.photoUrl;
 
       // Upload image if file selected
       if (imageFile) {
-        setUploading(true)
-        const uploadFormData = new FormData()
-        uploadFormData.append('file', imageFile)
+        setUploading(true);
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", imageFile);
 
-        const uploadResponse = await fetch('http://localhost:5068/api/Product/upload-image', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: uploadFormData
-        })
+        const uploadResponse = await fetch(
+          "http://localhost:5068/api/Product/upload-image",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: uploadFormData,
+          }
+        );
 
         if (!uploadResponse.ok) {
-          throw new Error('Nepavyko įkelti nuotraukos')
+          throw new Error("Nepavyko įkelti nuotraukos");
         }
 
-        const uploadResult = await uploadResponse.json()
-        photoUrl = uploadResult.photoUrl
-        setUploading(false)
+        const uploadResult = await uploadResponse.json();
+        photoUrl = uploadResult.photoUrl;
+        setUploading(false);
       }
 
-      const response = await fetch('http://localhost:5068/api/Product', {
-        method: 'POST',
+      const response = await fetch("http://localhost:5068/api/Product", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ ...formData, photoUrl })
-      })
+        body: JSON.stringify({ ...formData, photoUrl }),
+      });
 
       if (!response.ok) {
-        throw new Error('Nepavyko pridėti produkto')
+        throw new Error("Nepavyko pridėti produkto");
       }
 
-      setShowAddModal(false)
-      setImageFile(null)
-      setImagePreview(null)
-      await fetchProducts()
-      alert('Produktas sėkmingai pridėtas!')
+      setShowAddModal(false);
+      setImageFile(null);
+      setImagePreview(null);
+      await fetchProducts();
+      alert("Produktas sėkmingai pridėtas!");
     } catch (err) {
-      alert('Klaida: ' + err.message)
+      alert("Klaida: " + err.message);
     } finally {
-      setSaving(false)
-      setUploading(false)
+      setSaving(false);
+      setUploading(false);
     }
-  }
+  };
 
   const handleSubmitEdit = async (e) => {
-    e.preventDefault()
-    setSaving(true)
+    e.preventDefault();
+    setSaving(true);
 
     try {
-      const token = getAuthToken()
-      let photoUrl = formData.photoUrl
+      const token = getAuthToken();
+      let photoUrl = formData.photoUrl;
 
       // Upload new image if file selected
       if (imageFile) {
-        setUploading(true)
-        const uploadFormData = new FormData()
-        uploadFormData.append('file', imageFile)
+        setUploading(true);
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", imageFile);
 
-        const uploadResponse = await fetch('http://localhost:5068/api/Product/upload-image', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: uploadFormData
-        })
+        const uploadResponse = await fetch(
+          "http://localhost:5068/api/Product/upload-image",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: uploadFormData,
+          }
+        );
 
         if (!uploadResponse.ok) {
-          throw new Error('Nepavyko įkelti nuotraukos')
+          throw new Error("Nepavyko įkelti nuotraukos");
         }
 
-        const uploadResult = await uploadResponse.json()
-        photoUrl = uploadResult.photoUrl
-        setUploading(false)
+        const uploadResult = await uploadResponse.json();
+        photoUrl = uploadResult.photoUrl;
+        setUploading(false);
       }
 
-      const response = await fetch(`http://localhost:5068/api/Product/${editingProduct.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ ...formData, photoUrl })
-      })
+      const response = await fetch(
+        `http://localhost:5068/api/Product/${editingProduct.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ ...formData, photoUrl }),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Nepavyko atnaujinti produkto')
+        throw new Error("Nepavyko atnaujinti produkto");
       }
 
-      setShowEditModal(false)
-      setEditingProduct(null)
-      setImageFile(null)
-      setImagePreview(null)
-      await fetchProducts()
-      
+      setShowEditModal(false);
+      setEditingProduct(null);
+      setImageFile(null);
+      setImagePreview(null);
+      await fetchProducts();
+
       if (selectedProduct?.id === editingProduct.id) {
-        setSelectedProduct({ ...editingProduct, ...formData, photoUrl })
+        setSelectedProduct({ ...editingProduct, ...formData, photoUrl });
       }
-      
-      alert('Produktas sėkmingai atnaujintas!')
+
+      alert("Produktas sėkmingai atnaujintas!");
     } catch (err) {
-      alert('Klaida: ' + err.message)
+      alert("Klaida: " + err.message);
     } finally {
-      setSaving(false)
-      setUploading(false)
+      setSaving(false);
+      setUploading(false);
     }
-  }
+  };
 
   const handleFormChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
+    const { name, value } = e.target;
+    setFormData((prev) => ({
       ...prev,
-      [name]: name === 'type' ? parseInt(value) : value
-    }))
-  }
+      [name]: name === "type" ? parseInt(value) : value,
+    }));
+  };
 
   // Handle image file selection
   const handleImageChange = (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files[0];
     if (file) {
       // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+      const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
       if (!allowedTypes.includes(file.type)) {
-        alert('Netinkamas failo tipas. Leidžiami: JPG, PNG, GIF, WEBP')
-        return
+        alert("Netinkamas failo tipas. Leidžiami: JPG, PNG, GIF, WEBP");
+        return;
       }
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('Failas per didelis. Maksimalus dydis: 5MB')
-        return
+        alert("Failas per didelis. Maksimalus dydis: 5MB");
+        return;
       }
-      setImageFile(file)
+      setImageFile(file);
       // Create preview
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result)
-      }
-      reader.readAsDataURL(file)
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   // Remove selected image
   const handleRemoveImage = () => {
-    setImageFile(null)
-    setImagePreview(null)
-    setFormData(prev => ({ ...prev, photoUrl: '' }))
-  }
+    setImageFile(null);
+    setImagePreview(null);
+    setFormData((prev) => ({ ...prev, photoUrl: "" }));
+  };
 
   // Helper to get full image URL
   const getImageUrl = (photoUrl) => {
-    if (!photoUrl) return null
+    if (!photoUrl) return null;
     // If it's already a full URL, return as is
-    if (photoUrl.startsWith('http://') || photoUrl.startsWith('https://')) {
-      return photoUrl
+    if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
+      return photoUrl;
     }
     // Otherwise, prepend the backend URL
-    return `http://localhost:5068${photoUrl}`
-  }
+    return `http://localhost:5068${photoUrl}`;
+  };
 
   // Product Form Modal
   const ProductFormModal = ({ isEdit, onSubmit, onClose }) => (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{isEdit ? 'Redaguoti produktą' : 'Pridėti naują produktą'}</h2>
-          <button className="modal-close-btn" onClick={onClose}>×</button>
+          <h2>{isEdit ? "Redaguoti produktą" : "Pridėti naują produktą"}</h2>
+          <button className="modal-close-btn" onClick={onClose}>
+            ×
+          </button>
         </div>
-        
+
         <form onSubmit={onSubmit} className="product-form">
           <div className="form-group">
             <label htmlFor="name">Pavadinimas *</label>
@@ -416,7 +440,7 @@ const Products = () => {
               onChange={handleFormChange}
               required
             >
-              {CATEGORIES.filter(c => c.type !== null).map(cat => (
+              {CATEGORIES.filter((c) => c.type !== null).map((cat) => (
                 <option key={cat.id} value={cat.type}>
                   {cat.icon} {cat.name}
                 </option>
@@ -441,9 +465,13 @@ const Products = () => {
             <div className="image-upload-container">
               {imagePreview ? (
                 <div className="image-preview-wrapper">
-                  <img src={imagePreview} alt="Preview" className="image-preview" />
-                  <button 
-                    type="button" 
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="image-preview"
+                  />
+                  <button
+                    type="button"
                     className="btn-remove-image"
                     onClick={handleRemoveImage}
                   >
@@ -461,7 +489,9 @@ const Products = () => {
                   <div className="image-upload-placeholder">
                     <span className="upload-icon">📷</span>
                     <span>Pasirinkite nuotrauką</span>
-                    <span className="upload-hint">JPG, PNG, GIF, WEBP (max 5MB)</span>
+                    <span className="upload-hint">
+                      JPG, PNG, GIF, WEBP (max 5MB)
+                    </span>
                   </div>
                 </label>
               )}
@@ -484,14 +514,24 @@ const Products = () => {
             <button type="button" className="btn-cancel" onClick={onClose}>
               Atšaukti
             </button>
-            <button type="submit" className="btn-submit" disabled={saving || uploading}>
-              {uploading ? 'Įkeliama nuotrauka...' : saving ? 'Saugoma...' : (isEdit ? 'Atnaujinti' : 'Pridėti')}
+            <button
+              type="submit"
+              className="btn-submit"
+              disabled={saving || uploading}
+            >
+              {uploading
+                ? "Įkeliama nuotrauka..."
+                : saving
+                ? "Saugoma..."
+                : isEdit
+                ? "Atnaujinti"
+                : "Pridėti"}
             </button>
           </div>
         </form>
       </div>
     </div>
-  )
+  );
 
   if (loading) {
     return (
@@ -501,7 +541,7 @@ const Products = () => {
           <p>Kraunami produktai...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -510,10 +550,12 @@ const Products = () => {
         <div className="error-container">
           <h3>Klaida</h3>
           <p>{error}</p>
-          <button onClick={() => window.location.reload()}>Bandyti dar kartą</button>
+          <button onClick={() => window.location.reload()}>
+            Bandyti dar kartą
+          </button>
         </div>
       </div>
-    )
+    );
   }
 
   // Product Detail View
@@ -532,20 +574,20 @@ const Products = () => {
             <button className="back-button" onClick={handleBackToList}>
               ← Grįžti į produktų sąrašą
             </button>
-            
+
             {isAdmin && (
               <div className="admin-detail-actions">
-                <button 
+                <button
                   className="btn-edit"
                   onClick={(e) => handleEditProduct(selectedProduct, e)}
                 >
                   ✏️ Redaguoti
                 </button>
-                <button 
+                <button
                   className="btn-delete"
                   onClick={(e) => {
-                    handleDeleteProduct(selectedProduct, e)
-                    handleBackToList()
+                    handleDeleteProduct(selectedProduct, e);
+                    handleBackToList();
                   }}
                 >
                   🗑️ Ištrinti
@@ -556,13 +598,17 @@ const Products = () => {
 
           <div className="product-detail-window">
             <div className="product-detail-image">
-              {selectedProduct.photoUrl && selectedProduct.photoUrl.length > 0 ? (
-                <img 
-                  src={getImageUrl(selectedProduct.photoUrl)} 
+              {selectedProduct.photoUrl &&
+              selectedProduct.photoUrl.length > 0 ? (
+                <img
+                  src={getImageUrl(selectedProduct.photoUrl)}
                   alt={selectedProduct.name}
                   onError={(e) => {
-                    console.error('Image load error:', getImageUrl(selectedProduct.photoUrl))
-                    e.target.style.display = 'none'
+                    console.error(
+                      "Image load error:",
+                      getImageUrl(selectedProduct.photoUrl)
+                    );
+                    e.target.style.display = "none";
                   }}
                 />
               ) : (
@@ -572,7 +618,8 @@ const Products = () => {
 
             <div className="product-detail-info">
               <span className="detail-type-badge">
-                {CATEGORIES.find(c => c.type === selectedProduct.type)?.icon} {getTypeName(selectedProduct.type)}
+                {CATEGORIES.find((c) => c.type === selectedProduct.type)?.icon}{" "}
+                {getTypeName(selectedProduct.type)}
               </span>
 
               <h1 className="detail-title">{selectedProduct.name}</h1>
@@ -580,13 +627,17 @@ const Products = () => {
               {selectedProduct.manufacturer && (
                 <div className="detail-row">
                   <span className="detail-label">Gamintojas:</span>
-                  <span className="detail-value">{selectedProduct.manufacturer}</span>
+                  <span className="detail-value">
+                    {selectedProduct.manufacturer}
+                  </span>
                 </div>
               )}
 
               <div className="detail-row">
                 <span className="detail-label">Kategorija:</span>
-                <span className="detail-value">{getTypeName(selectedProduct.type)}</span>
+                <span className="detail-value">
+                  {getTypeName(selectedProduct.type)}
+                </span>
               </div>
 
               {selectedProduct.description && (
@@ -605,13 +656,13 @@ const Products = () => {
             isEdit={true}
             onSubmit={handleSubmitEdit}
             onClose={() => {
-              setShowEditModal(false)
-              setEditingProduct(null)
+              setShowEditModal(false);
+              setEditingProduct(null);
             }}
           />
         )}
       </div>
-    )
+    );
   }
 
   return (
@@ -643,7 +694,10 @@ const Products = () => {
           <div className="filters-section">
             <div className="filter-group">
               <label>Rūšiuoti pagal:</label>
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
                 <option value="name">Pavadinimą</option>
                 <option value="manufacturer">Gamintoją</option>
                 <option value="type">Kategoriją</option>
@@ -663,18 +717,22 @@ const Products = () => {
           <div className="categories-sidebar">
             <h3>Kategorijos</h3>
             <div className="categories-list">
-              {CATEGORIES.map(category => (
+              {CATEGORIES.map((category) => (
                 <button
                   key={category.id}
-                  className={`category-item ${selectedCategory === category.id ? 'active' : ''}`}
+                  className={`category-item ${
+                    selectedCategory === category.id ? "active" : ""
+                  }`}
                   onClick={() => setSelectedCategory(category.id)}
                 >
                   <span className="category-icon">{category.icon}</span>
                   <span className="category-name">{category.name}</span>
                   <span className="category-count">
-                    ({category.id === 'visi' 
-                      ? products.length 
-                      : products.filter(p => p.type === category.type).length})
+                    (
+                    {category.id === "visi"
+                      ? products.length
+                      : products.filter((p) => p.type === category.type).length}
+                    )
                   </span>
                 </button>
               ))}
@@ -689,31 +747,36 @@ const Products = () => {
                 <p>Pabandykite pakeisti paieškos kriterijus arba filtrus.</p>
               </div>
             ) : (
-              filteredProducts.map(product => (
-                <div 
-                  key={product.id} 
+              filteredProducts.map((product) => (
+                <div
+                  key={product.id}
                   className="product-card clickable"
                   onClick={() => handleSelectProduct(product)}
                 >
                   <div className="product-image">
                     {product.photoUrl && product.photoUrl.length > 0 ? (
-                      <img src={getImageUrl(product.photoUrl)} alt={product.name} />
+                      <img
+                        src={getImageUrl(product.photoUrl)}
+                        alt={product.name}
+                      />
                     ) : (
                       <div className="no-image">📦</div>
                     )}
-                    <div className="type-badge">{getTypeName(product.type)}</div>
-                    
+                    <div className="type-badge">
+                      {getTypeName(product.type)}
+                    </div>
+
                     {/* Admin action buttons on card */}
                     {isAdmin && (
                       <div className="card-admin-actions">
-                        <button 
+                        <button
                           className="card-btn edit"
                           onClick={(e) => handleEditProduct(product, e)}
                           title="Redaguoti"
                         >
                           ✏️
                         </button>
-                        <button 
+                        <button
                           className="card-btn delete"
                           onClick={(e) => handleDeleteProduct(product, e)}
                           title="Ištrinti"
@@ -730,36 +793,21 @@ const Products = () => {
                       <p className="product-brand">{product.manufacturer}</p>
                     )}
                     {product.description && (
-                      <p className="product-description">{product.description}</p>
+                      <p className="product-description">
+                        {product.description}
+                      </p>
                     )}
 
                     <div className="product-footer">
                       <span className="product-type-tag">
-                        {CATEGORIES.find(c => c.type === product.type)?.icon} {getTypeName(product.type)}
+                        {CATEGORIES.find((c) => c.type === product.type)?.icon}{" "}
+                        {getTypeName(product.type)}
                       </span>
                     </div>
                   </div>
                 </div>
               ))
             )}
-          </div>
-        </div>
-
-        {/* Statistics */}
-        <div className="products-stats">
-          <div className="stats-grid">
-            <div className="stat-item">
-              <span className="stat-number">{filteredProducts.length}</span>
-              <span className="stat-label">Produktai</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-number">{CATEGORIES.length - 1}</span>
-              <span className="stat-label">Kategorijos</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-number">{new Set(products.map(p => p.manufacturer).filter(Boolean)).size}</span>
-              <span className="stat-label">Gamintojai</span>
-            </div>
           </div>
         </div>
       </div>
@@ -779,13 +827,13 @@ const Products = () => {
           isEdit={true}
           onSubmit={handleSubmitEdit}
           onClose={() => {
-            setShowEditModal(false)
-            setEditingProduct(null)
+            setShowEditModal(false);
+            setEditingProduct(null);
           }}
         />
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Products
+export default Products;
