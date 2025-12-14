@@ -6,11 +6,13 @@ import NotificationContainer from './components/NotificationContainer'
 import Chatbot from './components/Chatbot'
 import Home from './pages/Home'
 import Account from './pages/Account'
+import Admin from './pages/Admin'
 import Diseases from './pages/Diseases'
 import Products from './pages/Products'
 import Visits from './pages/Visits'
 import Auth from './pages/Auth'
 import './styles/App.css'
+import signalRClient from './services/signalRClient'
 
 // Main app content component that uses auth context
 const AppContent = () => {
@@ -24,6 +26,23 @@ const AppContent = () => {
       setCurrentPage('products')
     }
   }, [])
+
+  // Initialize SignalR after authentication
+  useEffect(() => {
+    let stopped = false
+    const token = localStorage.getItem('authToken')
+    if (isAuthenticated) {
+      signalRClient.start(token)
+    } else {
+      signalRClient.stop()
+    }
+    return () => {
+      if (!stopped) {
+        signalRClient.stop()
+        stopped = true
+      }
+    }
+  }, [isAuthenticated])
 
   // Handle successful authentication
   const handleAuthSuccess = async (userData) => {
@@ -54,6 +73,8 @@ const AppContent = () => {
     switch (currentPage) {
       case 'home':
         return <Home />
+      case 'admin':
+        return isAuthenticated ? <Admin /> : <Auth onAuthSuccess={handleAuthSuccess} />
       case 'account':
         return isAuthenticated ? <Account /> : <Auth onAuthSuccess={handleAuthSuccess} />
       case 'diseases':

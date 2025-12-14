@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import './Navbar.css'
 
 const Navbar = ({ currentPage, setCurrentPage, isAuthenticated }) => {
+  const { user } = useAuth()
   const getMenuItems = () => {
     const baseItems = [
       { id: 'home', label: 'Pagrindinis' },
@@ -38,6 +40,16 @@ const Navbar = ({ currentPage, setCurrentPage, isAuthenticated }) => {
             </button>
           </li>
         ))}
+        {isAuthenticated && user?.role === 0 && (
+          <li key="admin" className="nav-item">
+            <button 
+              className={`nav-button ${currentPage === 'admin' ? 'active' : ''}`}
+              onClick={() => setCurrentPage('admin')}
+            >
+              Admin
+            </button>
+          </li>
+        )}
       </ul>
     </nav>
   )

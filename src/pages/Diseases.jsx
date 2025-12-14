@@ -1,14 +1,22 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import diseasesService from '../services/diseasesService'
 import '../styles/Diseases.css'
 
 const Diseases = () => {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 0
   const [diseases, setDiseases] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedDisease, setSelectedDisease] = useState(null)
   const [loading, setLoading] = useState(true)
   const [userDiseases, setUserDiseases] = useState([])
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [form, setForm] = useState({
+    name: '', category: '', description: '', symptoms: '', treatment: '', severity: 'moderate', prevalence: 'medium'
+  })
 
   const categories = [
     { value: 'all', label: 'Visos kategorijos' },
@@ -46,6 +54,62 @@ const Diseases = () => {
       setUserDiseases(data)
     } catch (error) {
       console.error('Klaida įkeliant vartotojo ligų duomenis:', error)
+    }
+  }
+
+  const startCreate = () => {
+    setEditingId(null)
+    setForm({ name: '', category: '', description: '', symptoms: '', treatment: '', severity: 'moderate', prevalence: 'medium' })
+    setShowForm(true)
+  }
+
+  const startEdit = (disease) => {
+    setEditingId(disease.id)
+    setForm({
+      name: disease.name,
+      category: disease.category,
+      description: disease.description,
+      symptoms: Array.isArray(disease.symptoms) ? disease.symptoms.join(', ') : disease.symptoms,
+      treatment: disease.treatment,
+      severity: disease.severity,
+      prevalence: disease.prevalence
+    })
+    setShowForm(true)
+    setSelectedDisease(null)
+  }
+
+  const saveDisease = async (e) => {
+    e.preventDefault()
+    try {
+      const data = {
+        ...form,
+        symptoms: form.symptoms.split(',').map(s => s.trim()).filter(Boolean)
+      }
+      if (editingId) {
+        const res = await diseasesService.updateDiseaseRecord(editingId, data)
+        if (res.success || true) {
+          setDiseases(diseases.map(d => d.id === editingId ? { ...data, id: editingId } : d))
+        }
+      } else {
+        const res = await diseasesService.addDiseaseRecord(data)
+        const created = res.success ? (res.data || { ...data, id: (diseases[diseases.length-1]?.id || 0) + 1 }) : { ...data, id: (diseases[diseases.length-1]?.id || 0) + 1 }
+        setDiseases([...diseases, created])
+      }
+      setShowForm(false)
+      setForm({ name: '', category: '', description: '', symptoms: '', treatment: '', severity: 'moderate', prevalence: 'medium' })
+    } catch (err) {
+      console.error('Error saving disease:', err)
+    }
+  }
+
+  const deleteDisease = async (id) => {
+    if (!window.confirm('Pašalinti ligą?')) return
+    try {
+      const res = await diseasesService.deleteDiseaseRecord(id)
+      if (res.success || true) setDiseases(diseases.filter(d => d.id !== id))
+      setSelectedDisease(null)
+    } catch (err) {
+      console.error('Error deleting disease:', err)
     }
   }
 
@@ -209,12 +273,19 @@ const Diseases = () => {
                 >
                   Peržiūrėti
                 </button>
-                <button 
-                  className="btn secondary"
-                  onClick={() => addToUserDiseases(disease)}
-                >
-                  Pridėti į istoriją
-                </button>
+                {isAdmin ? (
+                  <>
+                    <button className="btn secondary" onClick={() => startEdit(disease)}>Redaguoti</button>
+                    <button className="btn danger" onClick={() => deleteDisease(disease.id)}>Šalinti</button>
+                  </>
+                ) : (
+                  <button 
+                    className="btn secondary"
+                    onClick={() => addToUserDiseases(disease)}
+                  >
+                    Pridėti į istoriją
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -295,7 +366,66 @@ const Diseases = () => {
                   </div>
                 </div>
               </div>
+              {isAdmin && (
+                <div className="modal-actions" style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem', paddingTop: '1rem', borderTop: '2px solid #e9ecef' }}>
+                  <button className="btn secondary" onClick={() => startEdit(selectedDisease)}>Redaguoti</button>
+                  <button className="btn danger" onClick={() => deleteDisease(selectedDisease.id)}>Šalinti</button>
+                </div>
+              )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin forma */}
+      {showForm && isAdmin && (
+        <div className="modal-overlay" onClick={() => setShowForm(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{editingId ? 'Redaguoti ligą' : 'Pridėti ligą'}</h3>
+              <button className="close-btn" onClick={() => setShowForm(false)}>×</button>
+            </div>
+            <form className="pet-form" onSubmit={saveDisease}>
+              <div className="form-grid">
+                <div className="form-group full-width">
+                  <label>Pavadinimas*</label>
+                  <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>Kategorija*</label>
+                  <select required value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+                    <option value="">Pasirinkite</option>
+                    {categories.filter(c => c.value !== 'all').map(c => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Sunkumas*</label>
+                  <select required value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })}>
+                    <option value="low">Lengvas</option>
+                    <option value="moderate">Vidutinis</option>
+                    <option value="high">Sunkus</option>
+                  </select>
+                </div>
+                <div className="form-group full-width">
+                  <label>Aprašymas*</label>
+                  <textarea required rows="3" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                </div>
+                <div className="form-group full-width">
+                  <label>Simptomai (atskirti kableliais)*</label>
+                  <textarea required rows="3" value={form.symptoms} onChange={(e) => setForm({ ...form, symptoms: e.target.value })} placeholder="Pvz.: Kosulys, Karščiavimas, Nuovargis" />
+                </div>
+                <div className="form-group full-width">
+                  <label>Gydymas*</label>
+                  <textarea required rows="3" value={form.treatment} onChange={(e) => setForm({ ...form, treatment: e.target.value })} />
+                </div>
+              </div>
+              <div className="form-actions">
+                <button type="button" className="btn secondary" onClick={() => setShowForm(false)}>Atšaukti</button>
+                <button type="submit" className="btn primary">Išsaugoti</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

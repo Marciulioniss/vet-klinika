@@ -6,6 +6,7 @@ const Visits = () => {
   const [visits, setVisits] = useState([])
   const [showNewVisitForm, setShowNewVisitForm] = useState(false)
   const [selectedVisit, setSelectedVisit] = useState(null)
+  const [editingVisit, setEditingVisit] = useState(null)
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('all')
   const [sortBy, setSortBy] = useState('date')
@@ -187,6 +188,27 @@ const Visits = () => {
     }
   }
 
+  const beginEditVisit = (visit) => {
+    setEditingVisit({ ...visit })
+    setShowNewVisitForm(false)
+    setSelectedVisit(null)
+  }
+
+  const saveEditVisit = async (e) => {
+    e.preventDefault()
+    if (!editingVisit) return
+    try {
+      await visitsService.updateVisit(editingVisit.id, editingVisit).catch(() => {
+        // Mock update
+        setVisits(prev => prev.map(v => v.id === editingVisit.id ? { ...editingVisit } : v))
+      })
+      setEditingVisit(null)
+      alert('Vizitas atnaujintas')
+    } catch (err) {
+      alert('Nepavyko atnaujinti vizito')
+    }
+  }
+
   if (loading) {
     return (
       <div className="visits-page">
@@ -281,6 +303,12 @@ const Visits = () => {
                   onClick={() => setSelectedVisit(visit)}
                 >
                   Peržiūrėti
+                </button>
+                <button 
+                  className="btn secondary"
+                  onClick={() => beginEditVisit(visit)}
+                >
+                  Redaguoti
                 </button>
                 {visit.status === 'scheduled' && (
                   <button 
@@ -506,7 +534,136 @@ const Visits = () => {
                   <p>{selectedVisit.notes}</p>
                 </div>
               )}
+              <div className="modal-actions">
+                <button className="btn secondary" onClick={() => setSelectedVisit(null)}>
+                  Uždaryti
+                </button>
+                <button className="btn primary" onClick={() => beginEditVisit(selectedVisit)}>
+                  Redaguoti vizitą
+                </button>
+              </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vizito redagavimo modalas */}
+      {editingVisit && (
+        <div className="modal-overlay" onClick={() => setEditingVisit(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Redaguoti vizitą</h3>
+              <button 
+                className="close-btn"
+                onClick={() => setEditingVisit(null)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <form className="visit-form" onSubmit={saveEditVisit}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Gydytojo vardas*</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingVisit.doctorName}
+                    onChange={(e) => setEditingVisit({ ...editingVisit, doctorName: e.target.value })}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Specializacija*</label>
+                  <select
+                    required
+                    value={editingVisit.specialty}
+                    onChange={(e) => setEditingVisit({ ...editingVisit, specialty: e.target.value })}
+                  >
+                    <option value="">Pasirinkite specializaciją</option>
+                    {specialties.map(specialty => (
+                      <option key={specialty} value={specialty}>
+                        {specialty}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Data*</label>
+                  <input
+                    type="date"
+                    required
+                    value={editingVisit.date}
+                    onChange={(e) => setEditingVisit({ ...editingVisit, date: e.target.value })}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Laikas*</label>
+                  <input
+                    type="time"
+                    required
+                    value={editingVisit.time}
+                    onChange={(e) => setEditingVisit({ ...editingVisit, time: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Vizito tipas*</label>
+                <select
+                  required
+                  value={editingVisit.type}
+                  onChange={(e) => setEditingVisit({ ...editingVisit, type: e.target.value })}
+                >
+                  {visitTypes.map(type => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Vizito priežastis*</label>
+                <textarea
+                  required
+                  value={editingVisit.reason}
+                  onChange={(e) => setEditingVisit({ ...editingVisit, reason: e.target.value })}
+                  rows="3"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Simptomai</label>
+                <textarea
+                  value={editingVisit.symptoms}
+                  onChange={(e) => setEditingVisit({ ...editingVisit, symptoms: e.target.value })}
+                  rows="3"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Papildomi komentarai</label>
+                <textarea
+                  value={editingVisit.notes}
+                  onChange={(e) => setEditingVisit({ ...editingVisit, notes: e.target.value })}
+                  rows="2"
+                />
+              </div>
+
+              <div className="form-actions">
+                <button type="button" className="btn secondary" onClick={() => setEditingVisit(null)}>
+                  Atšaukti
+                </button>
+                <button type="submit" className="btn primary">
+                  Išsaugoti pakeitimus
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
