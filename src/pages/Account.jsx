@@ -1,198 +1,376 @@
-import { useState, useEffect } from 'react'
-import userService from '../services/userService'
-import { notificationService } from '../services/notificationService'
-import '../styles/Account.css'
+import { useState, useEffect } from "react";
+import userService from "../services/userService";
+import petsService from "../services/petsService";
+import { notificationService } from "../services/notificationService";
+import "../styles/Account.css";
 
 const Account = () => {
-  const [activeTab, setActiveTab] = useState('profile')
-  const [isEditing, setIsEditing] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  
+  const [activeTab, setActiveTab] = useState("profile");
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [userData, setUserData] = useState({
     // Asmeninė informacija
-    firstName: '',
-    lastName: '',
-    personalCode: '',
-    email: '',
-    phone: '',
-    address: '',
-    birthDate: '',
-    
+    firstName: "",
+    lastName: "",
+    personalCode: "",
+    email: "",
+    phone: "",
+    address: "",
+    birthDate: "",
+
     // Sveikatos duomenys
-    bloodType: '',
-    allergies: '',
-    chronicDiseases: '',
-    medications: '',
-    emergencyContact: '',
-    emergencyPhone: '',
-    
+    bloodType: "",
+    allergies: "",
+    chronicDiseases: "",
+    medications: "",
+    emergencyContact: "",
+    emergencyPhone: "",
+
     // Sistemos nustatymai
     notifications: true,
-    language: 'lt',
-    theme: 'light'
-  })
+    language: "lt",
+    theme: "light",
+  });
 
   const [healthStats, setHealthStats] = useState({
     totalVisits: 0,
     upcomingVisits: 0,
     activePrescriptions: 0,
-    healthAlerts: 0
-  })
+    healthAlerts: 0,
+  });
+
+  const [pets, setPets] = useState([]);
+  const [showPetForm, setShowPetForm] = useState(false);
+  const [editingPet, setEditingPet] = useState(null);
+  const [newPet, setNewPet] = useState({
+    name: "",
+    species: "",
+    breed: "",
+    birthDate: "",
+    gender: "",
+    color: "",
+    weight: "",
+    microchipNumber: "",
+    notes: "",
+  });
 
   // Duomenų įkėlimas iš API
   useEffect(() => {
-    loadUserData()
-  }, [])
+    loadUserData();
+  }, []);
 
   const loadUserData = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
 
       // Naudoti pagerintą userService su automatiniais pranešimais
-      const [profileResult, statsResult] = await Promise.all([
+      const [profileResult, statsResult, petsResult] = await Promise.all([
         userService.getProfile(false), // Nereikia sėkmės pranešimo įkėlimui
-        userService.getHealthStats()
-      ])
+        userService.getHealthStats(),
+        petsService.getPets(false),
+      ]);
 
       if (profileResult.success) {
-        setUserData(profileResult.data || getMockUserData())
+        setUserData(profileResult.data || getMockUserData());
       } else {
         // Fallback į mock duomenis jei API nepasiekiamas
-        setUserData(getMockUserData())
+        setUserData(getMockUserData());
       }
 
       if (statsResult.success) {
-        setHealthStats(statsResult.data || getMockHealthStats())
+        setHealthStats(statsResult.data || getMockHealthStats());
       } else {
-        setHealthStats(getMockHealthStats())
+        setHealthStats(getMockHealthStats());
+      }
+
+      if (petsResult.success) {
+        setPets(petsResult.data || getMockPets());
+      } else {
+        setPets(getMockPets());
       }
     } catch (error) {
-      console.error('Error loading user data:', error)
-      notificationService.addError('Nepavyko įkelti vartotojo duomenų')
-      
+      console.error("Error loading user data:", error);
+      notificationService.addError("Nepavyko įkelti vartotojo duomenų");
+
       // Fallback į mock duomenis
-      setUserData(getMockUserData())
-      setHealthStats(getMockHealthStats())
+      setUserData(getMockUserData());
+      setHealthStats(getMockHealthStats());
+      setPets(getMockPets());
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Mock duomenys kaip atsarginė kopija
   const getMockUserData = () => ({
-    firstName: 'Jonas',
-    lastName: 'Jonaitis',
-    personalCode: '38001010000',
-    email: 'jonas.jonaitis@email.com',
-    phone: '+370 600 00000',
-    address: 'Vilniaus g. 1, Vilnius',
-    birthDate: '1980-01-01',
-    bloodType: 'A+',
-    allergies: 'Žiedadulkės',
-    chronicDiseases: '',
-    medications: '',
-    emergencyContact: 'Ona Jonaitienė',
-    emergencyPhone: '+370 600 00001',
+    firstName: "Jonas",
+    lastName: "Jonaitis",
+    personalCode: "38001010000",
+    email: "jonas.jonaitis@email.com",
+    phone: "+370 600 00000",
+    address: "Vilniaus g. 1, Vilnius",
+    birthDate: "1980-01-01",
+    bloodType: "A+",
+    allergies: "Žiedadulkės",
+    chronicDiseases: "",
+    medications: "",
+    emergencyContact: "Ona Jonaitienė",
+    emergencyPhone: "+370 600 00001",
     notifications: true,
-    language: 'lt',
-    theme: 'light'
-  })
+    language: "lt",
+    theme: "light",
+  });
 
   const getMockHealthStats = () => ({
     totalVisits: 15,
     upcomingVisits: 2,
     activePrescriptions: 1,
-    healthAlerts: 0
-  })
+    healthAlerts: 0,
+  });
+
+  const getMockPets = () => [
+    {
+      id: 1,
+      name: "Rексas",
+      species: "Šuo",
+      breed: "Vokiečių aviganis",
+      birthDate: "2020-05-15",
+      gender: "Patinas",
+      color: "Juodas ir rudas",
+      weight: "32",
+      microchipNumber: "123456789012345",
+      notes: "Draugiškas, bet bijo vaikų",
+    },
+    {
+      id: 2,
+      name: "Mūza",
+      species: "Katė",
+      breed: "Britanų trumpaplaukė",
+      birthDate: "2019-03-20",
+      gender: "Patelė",
+      color: "Pilka",
+      weight: "4.5",
+      microchipNumber: "987654321098765",
+      notes: "Alergiška žuviai",
+    },
+  ];
 
   const handleSave = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
 
       // Naudoti pagerintą userService su automatiniais pranešimais
-      const result = await userService.updateProfile(userData)
-      
+      const result = await userService.updateProfile(userData);
+
       if (result.success) {
-        setIsEditing(false)
+        setIsEditing(false);
         // Pranešimas jau bus parodytas automatiškai per userService
       }
     } catch (error) {
-      console.error('Klaida saugant duomenis:', error)
+      console.error("Klaida saugant duomenis:", error);
       // Klaidos pranešimas jau bus parodytas automatiškai
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleInputChange = (field, value) => {
-    setUserData(prev => ({
+    setUserData((prev) => ({
       ...prev,
-      [field]: value
-    }))
-  }
+      [field]: value,
+    }));
+  };
 
   const handleChangePassword = async () => {
-    const currentPassword = prompt('Įveskite dabartinį slaptažodį:')
-    if (!currentPassword) return
+    const currentPassword = prompt("Įveskite dabartinį slaptažodį:");
+    if (!currentPassword) return;
 
-    const newPassword = prompt('Įveskite naują slaptažodį:')
-    if (!newPassword) return
+    const newPassword = prompt("Įveskite naują slaptažodį:");
+    if (!newPassword) return;
 
-    const confirmPassword = prompt('Pakartokite naują slaptažodį:')
+    const confirmPassword = prompt("Pakartokite naują slaptažodį:");
     if (newPassword !== confirmPassword) {
-      notificationService.addError('Slaptažodžiai nesutampa')
-      return
+      notificationService.addError("Slaptažodžiai nesutampa");
+      return;
     }
 
     const result = await userService.changePassword({
       currentPassword,
-      newPassword
-    })
+      newPassword,
+    });
 
     // Pranešimas bus parodytas automatiškai per userService
-  }
+  };
 
   const handleDeleteAccount = async () => {
-    const result = await userService.deleteAccount()
-    
+    const result = await userService.deleteAccount();
+
     if (result.success) {
       // Nukreipti į prisijungimo puslapį
       setTimeout(() => {
-        window.location.reload()
-      }, 2000)
+        window.location.reload();
+      }, 2000);
     }
-  }
+  };
 
   const handleExportData = async () => {
-    await userService.exportUserData()
+    await userService.exportUserData();
     // Pranešimas bus parodytas automatiškai per userService
-  }
+  };
+
+  // Gyvūnų valdymo funkcijos
+  const handlePetInputChange = (field, value) => {
+    setNewPet((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleAddPet = () => {
+    setEditingPet(null);
+    setNewPet({
+      name: "",
+      species: "",
+      breed: "",
+      birthDate: "",
+      gender: "",
+      color: "",
+      weight: "",
+      microchipNumber: "",
+      notes: "",
+    });
+    setShowPetForm(true);
+  };
+
+  const handleEditPet = (pet) => {
+    setEditingPet(pet.id);
+    setNewPet({
+      name: pet.name,
+      species: pet.species,
+      breed: pet.breed,
+      birthDate: pet.birthDate,
+      gender: pet.gender,
+      color: pet.color,
+      weight: pet.weight,
+      microchipNumber: pet.microchipNumber,
+      notes: pet.notes,
+    });
+    setShowPetForm(true);
+  };
+
+  const handleSavePet = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+
+      if (editingPet) {
+        // Atnaujinti esamą gyvūną
+        const result = await petsService.updatePet(editingPet, newPet);
+        if (result.success) {
+          setPets(
+            pets.map((p) =>
+              p.id === editingPet ? { ...newPet, id: editingPet } : p
+            )
+          );
+          setShowPetForm(false);
+          setEditingPet(null);
+        }
+      } else {
+        // Pridėti naują gyvūną
+        const result = await petsService.addPet(newPet);
+        if (result.success) {
+          const newPetData = result.data || { ...newPet, id: pets.length + 1 };
+          setPets([...pets, newPetData]);
+          setShowPetForm(false);
+        }
+      }
+
+      setNewPet({
+        name: "",
+        species: "",
+        breed: "",
+        birthDate: "",
+        gender: "",
+        color: "",
+        weight: "",
+        microchipNumber: "",
+        notes: "",
+      });
+    } catch (error) {
+      console.error("Klaida saugant gyvūną:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePet = async (petId) => {
+    if (!confirm("Ar tikrai norite pašalinti šį gyvūną iš sąrašo?")) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const result = await petsService.deletePet(petId);
+
+      if (result.success) {
+        setPets(pets.filter((p) => p.id !== petId));
+      }
+    } catch (error) {
+      console.error("Klaida trinant gyvūną:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return "Nežinomas";
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
+      age--;
+    }
+
+    if (age === 0) {
+      const months = monthDiff < 0 ? 12 + monthDiff : monthDiff;
+      return `${months} mėn.`;
+    }
+
+    return `${age} m.`;
+  };
 
   const renderProfileTab = () => (
     <div className="profile-section">
       <div className="profile-header">
         <div className="profile-avatar">
-          <span>{userData.firstName.charAt(0)}{userData.lastName.charAt(0)}</span>
+          <span>
+            {userData.firstName.charAt(0)}
+            {userData.lastName.charAt(0)}
+          </span>
         </div>
         <div className="profile-info">
-          <h3>{userData.firstName} {userData.lastName}</h3>
+          <h3>
+            {userData.firstName} {userData.lastName}
+          </h3>
           <p>{userData.email}</p>
         </div>
-        <button 
-          className={`edit-btn ${isEditing ? 'save' : 'edit'}`}
-          onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+        <button
+          className={`edit-btn ${isEditing ? "save" : "edit"}`}
+          onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
           disabled={loading}
         >
-          {loading ? 'Kraunama...' : (isEditing ? 'Išsaugoti' : 'Redaguoti')}
+          {loading ? "Kraunama..." : isEditing ? "Išsaugoti" : "Redaguoti"}
         </button>
       </div>
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+      {error && <div className="error-message">{error}</div>}
 
       <div className="profile-form">
         <div className="form-section">
@@ -203,7 +381,7 @@ const Account = () => {
               <input
                 type="text"
                 value={userData.firstName}
-                onChange={(e) => handleInputChange('firstName', e.target.value)}
+                onChange={(e) => handleInputChange("firstName", e.target.value)}
                 disabled={!isEditing || loading}
               />
             </div>
@@ -212,7 +390,7 @@ const Account = () => {
               <input
                 type="text"
                 value={userData.lastName}
-                onChange={(e) => handleInputChange('lastName', e.target.value)}
+                onChange={(e) => handleInputChange("lastName", e.target.value)}
                 disabled={!isEditing || loading}
               />
             </div>
@@ -221,7 +399,9 @@ const Account = () => {
               <input
                 type="text"
                 value={userData.personalCode}
-                onChange={(e) => handleInputChange('personalCode', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("personalCode", e.target.value)
+                }
                 disabled={!isEditing || loading}
               />
             </div>
@@ -230,7 +410,7 @@ const Account = () => {
               <input
                 type="date"
                 value={userData.birthDate}
-                onChange={(e) => handleInputChange('birthDate', e.target.value)}
+                onChange={(e) => handleInputChange("birthDate", e.target.value)}
                 disabled={!isEditing || loading}
               />
             </div>
@@ -239,7 +419,7 @@ const Account = () => {
               <input
                 type="email"
                 value={userData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
+                onChange={(e) => handleInputChange("email", e.target.value)}
                 disabled={!isEditing || loading}
               />
             </div>
@@ -248,7 +428,7 @@ const Account = () => {
               <input
                 type="tel"
                 value={userData.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
                 disabled={!isEditing || loading}
               />
             </div>
@@ -257,7 +437,7 @@ const Account = () => {
               <input
                 type="text"
                 value={userData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
+                onChange={(e) => handleInputChange("address", e.target.value)}
                 disabled={!isEditing || loading}
               />
             </div>
@@ -265,29 +445,297 @@ const Account = () => {
         </div>
       </div>
     </div>
-  )
+  );
+
+  const renderPetsTab = () => (
+    <div className="pets-section">
+      <div className="pets-header">
+        <h3>Mano gyvūnai</h3>
+        <button
+          className="btn primary"
+          onClick={handleAddPet}
+          disabled={loading}
+        >
+          + Pridėti gyvūną
+        </button>
+      </div>
+
+      {pets.length === 0 ? (
+        <div className="empty-state">
+          <p>Dar neturite užregistruotų gyvūnų</p>
+          <p>Pridėkite savo augintinį, kad galėtumėte registruoti vizitus</p>
+        </div>
+      ) : (
+        <div className="pets-grid">
+          {pets.map((pet) => (
+            <div key={pet.id} className="pet-card">
+              <div className="pet-card-header">
+                <div className="pet-avatar">
+                  {pet.species === "Šuo"
+                    ? "🐕"
+                    : pet.species === "Katė"
+                    ? "🐈"
+                    : "🐾"}
+                </div>
+                <div className="pet-info">
+                  <h4>{pet.name}</h4>
+                  <p>
+                    {pet.species} • {pet.breed}
+                  </p>
+                </div>
+              </div>
+
+              <div className="pet-details">
+                <div className="detail-row">
+                  <span className="label">Amžius:</span>
+                  <span>{calculateAge(pet.birthDate)}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="label">Lytis:</span>
+                  <span>{pet.gender}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="label">Spalva:</span>
+                  <span>{pet.color}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="label">Svoris:</span>
+                  <span>{pet.weight} kg</span>
+                </div>
+                {pet.microchipNumber && (
+                  <div className="detail-row">
+                    <span className="label">Mikroschemos nr.:</span>
+                    <span className="microchip">{pet.microchipNumber}</span>
+                  </div>
+                )}
+                {pet.notes && (
+                  <div className="detail-row full-width">
+                    <span className="label">Pastabos:</span>
+                    <span className="notes">{pet.notes}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="pet-actions">
+                <button
+                  className="btn secondary small"
+                  onClick={() => handleEditPet(pet)}
+                  disabled={loading}
+                >
+                  Redaguoti
+                </button>
+                <button
+                  className="btn danger small"
+                  onClick={() => handleDeletePet(pet.id)}
+                  disabled={loading}
+                >
+                  Pašalinti
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Gyvūno pridėjimo/redagavimo forma */}
+      {showPetForm && (
+        <div className="modal-overlay" onClick={() => setShowPetForm(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                {editingPet ? "Redaguoti gyvūną" : "Pridėti naują gyvūną"}
+              </h3>
+              <button
+                className="close-btn"
+                onClick={() => setShowPetForm(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <form className="pet-form" onSubmit={handleSavePet}>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Vardas*</label>
+                  <input
+                    type="text"
+                    required
+                    value={newPet.name}
+                    onChange={(e) =>
+                      handlePetInputChange("name", e.target.value)
+                    }
+                    placeholder="Pvz.: Reksas"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Rūšis*</label>
+                  <select
+                    required
+                    value={newPet.species}
+                    onChange={(e) =>
+                      handlePetInputChange("species", e.target.value)
+                    }
+                  >
+                    <option value="">Pasirinkite rūšį</option>
+                    <option value="Šuo">Šuo</option>
+                    <option value="Katė">Katė</option>
+                    <option value="Triušis">Triušis</option>
+                    <option value="Jūrų kiaulytė">Jūrų kiaulytė</option>
+                    <option value="Šeškas">Šeškas</option>
+                    <option value="Paukštis">Paukštis</option>
+                    <option value="Kita">Kita</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Veislė</label>
+                  <input
+                    type="text"
+                    value={newPet.breed}
+                    onChange={(e) =>
+                      handlePetInputChange("breed", e.target.value)
+                    }
+                    placeholder="Pvz.: Vokiečių aviganis"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Gimimo data*</label>
+                  <input
+                    type="date"
+                    required
+                    value={newPet.birthDate}
+                    onChange={(e) =>
+                      handlePetInputChange("birthDate", e.target.value)
+                    }
+                    max={new Date().toISOString().split("T")[0]}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Lytis*</label>
+                  <select
+                    required
+                    value={newPet.gender}
+                    onChange={(e) =>
+                      handlePetInputChange("gender", e.target.value)
+                    }
+                  >
+                    <option value="">Pasirinkite lytį</option>
+                    <option value="Patinas">Patinas</option>
+                    <option value="Patelė">Patelė</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Spalva</label>
+                  <input
+                    type="text"
+                    value={newPet.color}
+                    onChange={(e) =>
+                      handlePetInputChange("color", e.target.value)
+                    }
+                    placeholder="Pvz.: Juodas ir rudas"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Svoris (kg)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={newPet.weight}
+                    onChange={(e) =>
+                      handlePetInputChange("weight", e.target.value)
+                    }
+                    placeholder="Pvz.: 25.5"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Mikroschemos numeris</label>
+                  <input
+                    type="text"
+                    value={newPet.microchipNumber}
+                    onChange={(e) =>
+                      handlePetInputChange("microchipNumber", e.target.value)
+                    }
+                    placeholder="15 skaitmenų"
+                    maxLength="15"
+                  />
+                </div>
+
+                <div className="form-group full-width">
+                  <label>Pastabos</label>
+                  <textarea
+                    value={newPet.notes}
+                    onChange={(e) =>
+                      handlePetInputChange("notes", e.target.value)
+                    }
+                    placeholder="Papildoma informacija apie gyvūną (alergijai, elgesio ypatumai ir pan.)"
+                    rows="3"
+                  />
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn secondary"
+                  onClick={() => setShowPetForm(false)}
+                  disabled={loading}
+                >
+                  Atšaukti
+                </button>
+                <button
+                  type="submit"
+                  className="btn primary"
+                  disabled={loading}
+                >
+                  {loading
+                    ? "Saugoma..."
+                    : editingPet
+                    ? "Išsaugoti"
+                    : "Pridėti"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   const renderHealthTab = () => (
     <div className="health-section">
       <div className="health-stats">
         <div className="stat-card">
           <h4>Vizitai</h4>
-          <span className="stat-number">{loading ? '...' : healthStats.totalVisits}</span>
+          <span className="stat-number">
+            {loading ? "..." : healthStats.totalVisits}
+          </span>
           <p>Iš viso</p>
         </div>
         <div className="stat-card">
           <h4>Būsimi vizitai</h4>
-          <span className="stat-number">{loading ? '...' : healthStats.upcomingVisits}</span>
+          <span className="stat-number">
+            {loading ? "..." : healthStats.upcomingVisits}
+          </span>
           <p>Suplanuoti</p>
         </div>
         <div className="stat-card">
           <h4>Receptai</h4>
-          <span className="stat-number">{loading ? '...' : healthStats.activePrescriptions}</span>
+          <span className="stat-number">
+            {loading ? "..." : healthStats.activePrescriptions}
+          </span>
           <p>Aktyvūs</p>
         </div>
         <div className="stat-card">
           <h4>Perspėjimai</h4>
-          <span className="stat-number">{loading ? '...' : healthStats.healthAlerts}</span>
+          <span className="stat-number">
+            {loading ? "..." : healthStats.healthAlerts}
+          </span>
           <p>Sveikatos</p>
         </div>
       </div>
@@ -299,7 +747,7 @@ const Account = () => {
             <label>Kraujo grupė</label>
             <select
               value={userData.bloodType}
-              onChange={(e) => handleInputChange('bloodType', e.target.value)}
+              onChange={(e) => handleInputChange("bloodType", e.target.value)}
               disabled={!isEditing || loading}
             >
               <option value="">Pasirinkite</option>
@@ -318,7 +766,7 @@ const Account = () => {
             <input
               type="text"
               value={userData.allergies}
-              onChange={(e) => handleInputChange('allergies', e.target.value)}
+              onChange={(e) => handleInputChange("allergies", e.target.value)}
               disabled={!isEditing || loading}
               placeholder="Pvz.: žiedadulkės, vaistai"
             />
@@ -327,7 +775,9 @@ const Account = () => {
             <label>Lėtinės ligos</label>
             <textarea
               value={userData.chronicDiseases}
-              onChange={(e) => handleInputChange('chronicDiseases', e.target.value)}
+              onChange={(e) =>
+                handleInputChange("chronicDiseases", e.target.value)
+              }
               disabled={!isEditing || loading}
               rows="3"
               placeholder="Aprašykite lėtines ligas ar būkles"
@@ -337,7 +787,7 @@ const Account = () => {
             <label>Nuolat vartojami vaistai</label>
             <textarea
               value={userData.medications}
-              onChange={(e) => handleInputChange('medications', e.target.value)}
+              onChange={(e) => handleInputChange("medications", e.target.value)}
               disabled={!isEditing || loading}
               rows="3"
               placeholder="Išvardinkite nuolat vartojamuos vaistus"
@@ -354,7 +804,9 @@ const Account = () => {
             <input
               type="text"
               value={userData.emergencyContact}
-              onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
+              onChange={(e) =>
+                handleInputChange("emergencyContact", e.target.value)
+              }
               disabled={!isEditing || loading}
             />
           </div>
@@ -363,14 +815,16 @@ const Account = () => {
             <input
               type="tel"
               value={userData.emergencyPhone}
-              onChange={(e) => handleInputChange('emergencyPhone', e.target.value)}
+              onChange={(e) =>
+                handleInputChange("emergencyPhone", e.target.value)
+              }
               disabled={!isEditing || loading}
             />
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 
   const renderSettingsTab = () => (
     <div className="settings-section">
@@ -382,7 +836,9 @@ const Account = () => {
               <input
                 type="checkbox"
                 checked={userData.notifications}
-                onChange={(e) => handleInputChange('notifications', e.target.checked)}
+                onChange={(e) =>
+                  handleInputChange("notifications", e.target.checked)
+                }
                 disabled={!isEditing || loading}
               />
               Gauti el. pašto pranešimus
@@ -392,7 +848,7 @@ const Account = () => {
             <label>Kalba</label>
             <select
               value={userData.language}
-              onChange={(e) => handleInputChange('language', e.target.value)}
+              onChange={(e) => handleInputChange("language", e.target.value)}
               disabled={!isEditing || loading}
             >
               <option value="lt">Lietuvių</option>
@@ -403,7 +859,7 @@ const Account = () => {
             <label>Tema</label>
             <select
               value={userData.theme}
-              onChange={(e) => handleInputChange('theme', e.target.value)}
+              onChange={(e) => handleInputChange("theme", e.target.value)}
               disabled={!isEditing || loading}
             >
               <option value="light">Šviesi</option>
@@ -416,8 +872,8 @@ const Account = () => {
       <div className="form-section">
         <h4>Saugumo nustatymai</h4>
         <div className="security-actions">
-          <button 
-            className="btn secondary" 
+          <button
+            className="btn secondary"
             onClick={handleChangePassword}
             disabled={loading}
           >
@@ -426,15 +882,15 @@ const Account = () => {
           <button className="btn secondary" disabled={loading}>
             Dviejų veiksnių autentifikacija
           </button>
-          <button 
-            className="btn secondary" 
+          <button
+            className="btn secondary"
             onClick={handleExportData}
             disabled={loading}
           >
             Eksportuoti duomenis
           </button>
-          <button 
-            className="btn danger" 
+          <button
+            className="btn danger"
             onClick={handleDeleteAccount}
             disabled={loading}
           >
@@ -443,7 +899,7 @@ const Account = () => {
         </div>
       </div>
     </div>
-  )
+  );
 
   if (loading && !userData.firstName) {
     return (
@@ -452,7 +908,7 @@ const Account = () => {
           <p>Kraunami duomenys...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -463,23 +919,30 @@ const Account = () => {
       </div>
 
       <div className="account-tabs">
-        <button 
-          className={`tab ${activeTab === 'profile' ? 'active' : ''}`}
-          onClick={() => setActiveTab('profile')}
+        <button
+          className={`tab ${activeTab === "profile" ? "active" : ""}`}
+          onClick={() => setActiveTab("profile")}
           disabled={loading}
         >
           Profilis
         </button>
-        <button 
-          className={`tab ${activeTab === 'health' ? 'active' : ''}`}
-          onClick={() => setActiveTab('health')}
+        <button
+          className={`tab ${activeTab === "pets" ? "active" : ""}`}
+          onClick={() => setActiveTab("pets")}
+          disabled={loading}
+        >
+          Gyvūnai
+        </button>
+        <button
+          className={`tab ${activeTab === "health" ? "active" : ""}`}
+          onClick={() => setActiveTab("health")}
           disabled={loading}
         >
           Sveikatos duomenys
         </button>
-        <button 
-          className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('settings')}
+        <button
+          className={`tab ${activeTab === "settings" ? "active" : ""}`}
+          onClick={() => setActiveTab("settings")}
           disabled={loading}
         >
           Nustatymai
@@ -487,12 +950,13 @@ const Account = () => {
       </div>
 
       <div className="account-content">
-        {activeTab === 'profile' && renderProfileTab()}
-        {activeTab === 'health' && renderHealthTab()}
-        {activeTab === 'settings' && renderSettingsTab()}
+        {activeTab === "profile" && renderProfileTab()}
+        {activeTab === "pets" && renderPetsTab()}
+        {activeTab === "health" && renderHealthTab()}
+        {activeTab === "settings" && renderSettingsTab()}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Account
+export default Account;

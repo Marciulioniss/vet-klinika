@@ -456,3 +456,290 @@
 .account-page::-webkit-scrollbar-thumb:hover {
   background: #1e4220;
 }
+
+/* Gyvūnų sekcija */
+.pets-section {
+  padding: 1rem;
+}
+
+.pets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.pets-header h3 {
+  color: #2c5f2d;
+  font-size: 1.5rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.pets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.pet-card {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.pet-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(44, 95, 45, 0.15);
+  border-color: #2c5f2d;
+}
+
+.pet-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.pet-avatar {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #2c5f2d, #4a7c4a);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.pet-info h4 {
+  margin: 0 0 0.25rem 0;
+  color: #2c5f2d;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.pet-info p {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.pet-details {
+  margin-bottom: 1.5rem;
+}
+
+.pet-details .detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.pet-details .detail-row.full-width {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pet-details .label {
+  font-weight: 600;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.pet-details .microchip {
+  font-family: monospace;
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.pet-details .notes {
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  background: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-top: 0.25rem;
+}
+
+.pet-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.pet-actions .btn.small {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 2px dashed #dee2e6;
+}
+
+.empty-state p {
+  color: #666;
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+
+.empty-state p:first-child {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c5f2d;
+}
+
+/* Modal stiliai */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 2px solid #e9ecef;
+  background: linear-gradient(135deg, #2c5f2d, #4a7c4a);
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: white;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.3s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.pet-form {
+  padding: 2rem;
+}
+
+.pet-form .form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.pet-form .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.pet-form .form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #2c5f2d;
+  font-size: 0.95rem;
+}
+
+.pet-form .form-group input,
+.pet-form .form-group select,
+.pet-form .form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.pet-form .form-group input:focus,
+.pet-form .form-group select:focus,
+.pet-form .form-group textarea:focus {
+  outline: none;
+  border-color: #2c5f2d;
+  box-shadow: 0 0 0 3px rgba(44, 95, 45, 0.1);
+}
+
+.pet-form .form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.pet-form .form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 2px solid #e9ecef;
+}
+
+/* Responsive stiliai */
+@media (max-width: 768px) {
+  .pets-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pet-form .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pets-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .pets-header .btn {
+    width: 100%;
+  }
+}
