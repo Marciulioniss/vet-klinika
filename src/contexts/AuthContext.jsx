@@ -32,24 +32,21 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         // Gauti vartotojo duomenis iš localStorage (mock režime)
         const userData = authService.getUserData()
-        
+
         if (userData) {
           setUser(userData)
           setIsAuthenticated(true)
         } else {
-          // TODO: Verify token with backend and get user data
-          // For now, we'll use mock data if token exists
-          const mockUser = {
-            id: 1,
-            firstName: 'Jonas',
-            lastName: 'Jonaitis',
-            email: 'jonas.jonaitis@email.com',
-            phone: '+370 600 00000',
-            personalCode: '38001010000'
+          // Try to fetch profile from backend when token exists
+          try {
+            const me = await (await import('../services/api')).default.get('/users/me')
+            setUser(me)
+            setIsAuthenticated(true)
+          } catch (err) {
+            console.warn('Could not fetch user profile during init:', err)
+            // fallback: clear token
+            await authService.logout()
           }
-          
-          setUser(mockUser)
-          setIsAuthenticated(true)
         }
       }
     } catch (error) {

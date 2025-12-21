@@ -92,6 +92,12 @@ const Auth = ({ onAuthSuccess }) => {
           onAuthSuccess(result.user);
         }
       }
+
+      // Fallback: if login succeeded but parent didn't provide a handler,
+      // reload so App reads new auth state and navigates accordingly.
+      if (result.success && !onAuthSuccess) {
+        window.location.reload();
+      }
     } catch (error) {
       console.error("Login error:", error);
       notificationService.addError(error.message || "Prisijungimo klaida");
@@ -156,8 +162,17 @@ const Auth = ({ onAuthSuccess }) => {
     setLoading(true);
 
     try {
-      const { confirmPassword, agreeToTerms, agreeToPrivacy, ...userData } =
+      const { confirmPassword, agreeToTerms, agreeToPrivacy, ...rest } =
         registerData;
+      // Map frontend fields to backend DTO expected names
+      const userData = {
+        Name: rest.firstName,
+        Surname: rest.lastName,
+        Email: rest.email,
+        Password: rest.password,
+        PhoneNumber: rest.phone,
+        PhotoUrl: rest.photoUrl || ""
+      };
       const result = await contextRegister(userData);
 
       if (result.success) {
@@ -176,6 +191,9 @@ const Auth = ({ onAuthSuccess }) => {
         // Call success callback
         if (onAuthSuccess) {
           onAuthSuccess(result.user);
+        } else {
+          // Fallback: reload so app picks up new auth state
+          window.location.reload();
         }
       }
     } catch (error) {

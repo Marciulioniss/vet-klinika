@@ -5,7 +5,13 @@ export const diseasesService = {
   // Gauti visas ligas
   async getDiseases(params = {}) {
     const queryParams = new URLSearchParams(params).toString()
-    return await apiClient.get(`/diseases${queryParams ? `?${queryParams}` : ''}`)
+    const url = `http://localhost:5068/api/Disease${queryParams ? `?${queryParams}` : ''}`
+    const resp = await fetch(url, { headers: { 'Content-Type': 'application/json' } })
+    if (!resp.ok) {
+      const err = await resp.text().catch(() => '')
+      throw new Error(`Failed to fetch diseases: ${resp.status} ${err}`)
+    }
+    return await resp.json()
   },
 
   // Gauti konkretų ligos įrašą
@@ -35,7 +41,36 @@ export const diseasesService = {
 
   // Gauti ligas pagal kategoriją
   async getDiseasesByCategory(category) {
-    return await apiClient.get(`/diseases/category/${category}`)
+    // Fetch all diseases and filter client-side.
+    // Accepts: enum name ("Infection"), localized label with parentheses ("Infekcija (Infection)"),
+    // or numeric value (0, "0"). Comparison is case-insensitive.
+    const diseases = await this.getDiseases()
+    if (category === undefined || category === null || category === '') return diseases
+
+    const normalizeInput = (c) => {
+      if (typeof c === 'number') return { kind: 'number', value: c }
+      const s = String(c).trim()
+      // if label contains parentheses like "Infekcija (Infection)", prefer inner value
+      const paren = s.match(/\(([^)]+)\)/)
+      const extracted = paren ? paren[1].trim() : s
+      if (/^\d+$/.test(extracted)) return { kind: 'number', value: Number(extracted) }
+      return { kind: 'string', value: extracted.toLowerCase() }
+    }
+
+    const input = normalizeInput(category)
+
+    return diseases.filter(d => {
+      const raw = d.category ?? d.Category ?? ''
+      if (input.kind === 'number') {
+        if (typeof raw === 'number') return raw === input.value
+        if (typeof raw === 'string' && /^\d+$/.test(raw)) return Number(raw) === input.value
+        return false
+      }
+
+      // string comparison (case-insensitive)
+      const rawStr = String(raw).toLowerCase()
+      return rawStr === input.value
+    })
   },
 
   // Ieškoti ligų pagal pavadinimą

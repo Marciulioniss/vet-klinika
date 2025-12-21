@@ -42,7 +42,8 @@ const MOCK_USERS = [
 ]
 
 // Patikrinti ar naudoti mock režimą (kai backend'as nepasiekiamas)
-const USE_MOCK_AUTH = true // Pakeiskite į false, kai backend'as veiks
+// Set to false to use real backend endpoints.
+const USE_MOCK_AUTH = false
 
 // Autentifikacijos API funkcijos
 export const authService = {
@@ -80,12 +81,43 @@ export const authService = {
       })
     }
     
-    // Tikras API kvietimas (kai backend'as veikia)
-    const response = await apiClient.post('/auth/login', credentials)
-    if (response.token) {
-      apiClient.setAuthToken(response.token)
+    // Real API flow
+    try {
+      const response = await apiClient.post('/auth/login', credentials)
+
+      // Try multiple possible token property names
+      const token = response?.AccessToken || response?.accessToken || response?.token || response?.Token || response?.access_token
+
+      if (token) {
+        apiClient.setAuthToken(token)
+        // Persist token in both keys for compatibility
+        localStorage.setItem('auth_token', token)
+        localStorage.setItem('authToken', token)
+
+        // Get full user profile
+        try {
+          const me = await apiClient.get('/users/me')
+          const user = me || {
+            id: response?.UserId,
+            email: response?.Email,
+            role: isNaN(Number(response?.Role)) ? response?.Role : Number(response?.Role)
+          }
+          localStorage.setItem('user_data', JSON.stringify(user))
+          return { token, user }
+        } catch (err) {
+          const user = { id: response?.UserId, email: response?.Email, role: response?.Role }
+          localStorage.setItem('user_data', JSON.stringify(user))
+          return { token, user }
+        }
+      }
+
+      // No token in response - surface server message
+      const serverMsg = response?.message || response?.error || response?.Message || null
+      throw new Error(serverMsg || 'Login failed')
+    } catch (err) {
+      console.error('authService.login error', err)
+      throw err
     }
-    return response
   },
 
   // Registracija
@@ -111,6 +143,7 @@ export const authService = {
           
           const token = `mock_token_${newUser.id}_${Date.now()}`
           localStorage.setItem('auth_token', token)
+          localStorage.setItem('authToken', token)
           localStorage.setItem('user_data', JSON.stringify(newUser))
           
           resolve({
@@ -121,12 +154,34 @@ export const authService = {
       })
     }
     
-    // Tikras API kvietimas
-    const response = await apiClient.post('/auth/register', userData)
-    if (response.token) {
-      apiClient.setAuthToken(response.token)
+    // Real API flow
+    try {
+      const response = await apiClient.post('/auth/register', userData)
+      const token = response?.AccessToken || response?.accessToken || response?.token || response?.Token || response?.access_token
+
+      if (token) {
+        apiClient.setAuthToken(token)
+        localStorage.setItem('auth_token', token)
+        localStorage.setItem('authToken', token)
+
+        try {
+          const me = await apiClient.get('/users/me')
+          const user = me || { id: response?.UserId, email: response?.Email, role: response?.Role }
+          localStorage.setItem('user_data', JSON.stringify(user))
+          return { token, user }
+        } catch (err) {
+          const user = { id: response?.UserId, email: response?.Email, role: response?.Role }
+          localStorage.setItem('user_data', JSON.stringify(user))
+          return { token, user }
+        }
+      }
+
+      const serverMsg = response?.message || response?.error || response?.Message || null
+      throw new Error(serverMsg || 'Registration failed')
+    } catch (err) {
+      console.error('authService.register error', err)
+      throw err
     }
-    return response
   },
 
   // Atsijungimas
@@ -134,6 +189,7 @@ export const authService = {
     if (USE_MOCK_AUTH) {
       // Mock atsijungimas
       localStorage.removeItem('auth_token')
+      localStorage.removeItem('authToken')
       localStorage.removeItem('user_data')
       return Promise.resolve()
     }
@@ -186,27 +242,19 @@ export const authService = {
 
   // Patikrinti ar vartotojas prisijungęs
   isAuthenticated() {
-    if (USE_MOCK_AUTH) {
-      return !!localStorage.getItem('auth_token')
-    }
-    return !!apiClient.token
+    // Check both client token and legacy localStorage key for compatibility
+    return !!(apiClient.token || localStorage.getItem('authToken') || localStorage.getItem('auth_token'))
   },
 
   // Gauti dabartinį tokeną
   getToken() {
-    if (USE_MOCK_AUTH) {
-      return localStorage.getItem('auth_token')
-    }
-    return apiClient.token
+    return apiClient.token || localStorage.getItem('authToken') || localStorage.getItem('auth_token')
   },
 
   // Gauti vartotojo duomenis iš localStorage (mock režime)
   getUserData() {
-    if (USE_MOCK_AUTH) {
-      const userData = localStorage.getItem('user_data')
-      return userData ? JSON.parse(userData) : null
-    }
-    return null
+    const userData = localStorage.getItem('user_data')
+    return userData ? JSON.parse(userData) : null
   },
 
   // Atnaujinti tokeną

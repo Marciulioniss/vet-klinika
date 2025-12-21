@@ -1,25 +1,31 @@
 import './Header.css'
 
 const Header = ({ user, onLogout }) => {
+  const first = user?.firstName || user?.name || user?.givenName || ''
+  const last = user?.lastName || user?.surname || user?.familyName || ''
+  const email = user?.email || user?.userName || ''
+  const firstInitial = first?.charAt ? first.charAt(0) : ''
+  const lastInitial = last?.charAt ? last.charAt(0) : ''
+
   return (
     <header className="header">
       <div className="header-content">
         <h1 className="clinic-title">Veterinarijos klinika "Sveiki gyvūnai"</h1>
-        
-        {user && (
+
+        {user ? (
           <div className="user-info">
             <div className="user-details">
-              <span className="user-name">{user.firstName} {user.lastName}</span>
-              <span className="user-email">{user.email}</span>
+              <span className="user-name">{(first || last) ? `${first} ${last}`.trim() : 'Vartotojas'}</span>
+              {email && <span className="user-email">{email}</span>}
             </div>
             <div className="user-avatar">
-              <span>{user.firstName.charAt(0)}{user.lastName.charAt(0)}</span>
+              <span>{firstInitial}{lastInitial}</span>
             </div>
             <button className="logout-btn" onClick={onLogout} title="Atsijungti">
               Atsijungti
             </button>
           </div>
-        )}
+        ) : null}
       </div>
     </header>
   )

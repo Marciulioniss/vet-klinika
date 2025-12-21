@@ -263,7 +263,9 @@ const Diseases = () => {
         <div className="category-filter">
           <select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={(e) =>
+              setSelectedCategory(e.target.value === "all" ? "all" : parseInt(e.target.value))
+            }
           >
             {categories.map((category) => (
               <option key={category.value} value={category.value}>
