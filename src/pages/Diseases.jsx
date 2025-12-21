@@ -15,21 +15,19 @@ const Diseases = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
-    ligos_pavadinimas: "",
-    liga_kategorija: "",
-    ligos_aprasymas: "",
+    name: "",
+    latinName: "",
+    category: 0,
+    description: "",
   });
 
   const categories = [
     { value: "all", label: "Visos kategorijos" },
-    { value: "cardiovascular", label: "Širdies ir kraujagyslių ligos" },
-    { value: "respiratory", label: "Kvėpavimo sistemos ligos" },
-    { value: "digestive", label: "Virškinimo sistemos ligos" },
-    { value: "neurological", label: "Nervų sistemos ligos" },
-    { value: "endocrine", label: "Endokrininės sistemos ligos" },
-    { value: "infectious", label: "Infekcinės ligos" },
-    { value: "dermatological", label: "Odos ligos" },
-    { value: "oncological", label: "Onkologinės ligos" },
+    { value: 0, label: "Infekcija (Infection)" },
+    { value: 1, label: "Ne infekcija (Not_Infection)" },
+    { value: 2, label: "Genetinė (Genetic)" },
+    { value: 3, label: "Elgesio (Behavioral)" },
+    { value: 4, label: "Organų sistemos (Organ_system)" },
   ];
 
   useEffect(() => {
@@ -64,9 +62,10 @@ const Diseases = () => {
   const startCreate = () => {
     setEditingId(null);
     setForm({
-      ligos_pavadinimas: "",
-      liga_kategorija: "",
-      ligos_aprasymas: "",
+      name: "",
+      latinName: "",
+      category: 0,
+      description: "",
     });
     setShowForm(true);
   };
@@ -74,9 +73,10 @@ const Diseases = () => {
   const startEdit = (disease) => {
     setEditingId(disease.id);
     setForm({
-      ligos_pavadinimas: disease.ligos_pavadinimas || disease.name || "",
-      liga_kategorija: disease.liga_kategorija || disease.category || "",
-      ligos_aprasymas: disease.ligos_aprasymas || disease.description || "",
+      name: disease.name,
+      latinName: disease.latinName || "",
+      category: disease.category || 0,
+      description: disease.description,
     });
     setShowForm(true);
     setSelectedDisease(null);
@@ -85,7 +85,13 @@ const Diseases = () => {
   const saveDisease = async (e) => {
     e.preventDefault();
     try {
-      const data = { ...form };
+      const data = {
+        ...form,
+        symptoms: form.symptoms
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      };
       if (editingId) {
         const res = await diseasesService.updateDiseaseRecord(editingId, data);
         if (res.success || true) {
@@ -107,9 +113,10 @@ const Diseases = () => {
       }
       setShowForm(false);
       setForm({
-        ligos_pavadinimas: "",
-        liga_kategorija: "",
-        ligos_aprasymas: "",
+        name: "",
+        latinName: "",
+        category: 0,
+        description: "",
       });
     } catch (err) {
       console.error("Error saving disease:", err);
@@ -130,46 +137,47 @@ const Diseases = () => {
   const getMockDiseases = () => [
     {
       id: 1,
-      ligos_pavadinimas: "Arterinė hipertenzija",
-      liga_kategorija: "cardiovascular",
-      ligos_aprasymas: "Padidėjęs arterinis kraujospūdis",
+      name: "Arterinė hipertenzija",
+      latinName: "Hypertensio arterialis",
+      category: 4, // Organ_system
+      description: "Padidėjęs arterinis kraujospūdis",
     },
     {
       id: 2,
-      ligos_pavadinimas: "Bronchų astma",
-      liga_kategorija: "respiratory",
-      ligos_aprasymas: "Lėtinis kvėpavimo takų uždegimas",
+      name: "Bronchų astma",
+      latinName: "Asthma bronchiale",
+      category: 4, // Organ_system
+      description: "Lėtinis kvėpavimo takų uždegimas",
     },
     {
       id: 3,
-      ligos_pavadinimas: "Diabetas",
-      liga_kategorija: "endocrine",
-      ligos_aprasymas: "Gliukozės metabolizmo sutrikimas",
+      name: "Diabetas",
+      latinName: "Diabetes mellitus",
+      category: 4, // Organ_system
+      description: "Gliukozės metabolizmo sutrikimas",
     },
     {
       id: 4,
-      ligos_pavadinimas: "Gastritas",
-      liga_kategorija: "digestive",
-      ligos_aprasymas: "Skrandžio gleivinės uždegimas",
+      name: "Gastritas",
+      latinName: "Gastritis",
+      category: 0, // Infection
+      description: "Skrandžio gleivinės uždegimas",
     },
     {
       id: 5,
-      ligos_pavadinimas: "Migrena",
-      liga_kategorija: "neurological",
-      ligos_aprasymas: "Lėtinis neurologinis sutrikimas",
+      name: "Epilepsija",
+      latinName: "Epilepsia",
+      category: 2, // Genetic
+      description: "Lėtinis neurologinis sutrikimas",
     },
   ];
 
   const filteredDiseases = diseases.filter((disease) => {
-    const name = disease.ligos_pavadinimas || disease.name || "";
-    const desc = disease.ligos_aprasymas || disease.description || "";
-    const cat = disease.liga_kategorija || disease.category || "";
-
     const matchesSearch =
-      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      desc.toLowerCase().includes(searchTerm.toLowerCase());
+      disease.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      disease.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory =
-      selectedCategory === "all" || cat === selectedCategory;
+      selectedCategory === "all" || disease.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -185,6 +193,11 @@ const Diseases = () => {
     } catch (error) {
       console.error("Klaida pridedant ligą:", error);
     }
+  };
+
+  const getCategoryLabel = (category) => {
+    const cat = categories.find((c) => c.value === category);
+    return cat ? cat.label : "Nežinoma";
   };
 
   const getSeverityColor = (severity) => {
@@ -266,22 +279,17 @@ const Diseases = () => {
           {filteredDiseases.map((disease) => (
             <div key={disease.id} className="disease-card">
               <div className="disease-header">
-                <h3>{disease.ligos_pavadinimas || disease.name}</h3>
+                <h3>{disease.name}</h3>
+                {disease.latinName && (
+                  <p className="latin-name">{disease.latinName}</p>
+                )}
               </div>
 
-              <p className="disease-description">
-                {disease.ligos_aprasymas || disease.description}
-              </p>
+              <p className="disease-description">{disease.description}</p>
 
               <div className="disease-category">
                 <span className="category-label">
-                  {
-                    categories.find(
-                      (c) =>
-                        c.value ===
-                        (disease.liga_kategorija || disease.category)
-                    )?.label
-                  }
+                  {getCategoryLabel(disease.category)}
                 </span>
               </div>
 
@@ -292,7 +300,7 @@ const Diseases = () => {
                 >
                   Peržiūrėti
                 </button>
-                {isAdmin && (
+                {isAdmin ? (
                   <>
                     <button
                       className="btn secondary"
@@ -307,6 +315,13 @@ const Diseases = () => {
                       Šalinti
                     </button>
                   </>
+                ) : (
+                  <button
+                    className="btn secondary"
+                    onClick={() => addToUserDiseases(disease)}
+                  >
+                    Pridėti į istoriją
+                  </button>
                 )}
               </div>
             </div>
@@ -441,25 +456,34 @@ const Diseases = () => {
             <form className="pet-form" onSubmit={saveDisease}>
               <div className="form-grid">
                 <div className="form-group full-width">
+                  <label>Liga lotyniškai*</label>
+                  <input
+                    required
+                    value={form.latinName}
+                    onChange={(e) =>
+                      setForm({ ...form, latinName: e.target.value })
+                    }
+                    placeholder="Pvz.: Diabetes mellitus"
+                  />
+                </div>
+                <div className="form-group full-width">
                   <label>Ligos pavadinimas*</label>
                   <input
                     required
-                    value={form.ligos_pavadinimas}
-                    onChange={(e) =>
-                      setForm({ ...form, ligos_pavadinimas: e.target.value })
-                    }
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Pvz.: Diabetas"
                   />
                 </div>
-                <div className="form-group">
-                  <label>Liga kategorija*</label>
+                <div className="form-group full-width">
+                  <label>Ligos kategorija*</label>
                   <select
                     required
-                    value={form.liga_kategorija}
+                    value={form.category}
                     onChange={(e) =>
-                      setForm({ ...form, liga_kategorija: e.target.value })
+                      setForm({ ...form, category: parseInt(e.target.value) })
                     }
                   >
-                    <option value="">Pasirinkite</option>
                     {categories
                       .filter((c) => c.value !== "all")
                       .map((c) => (
@@ -474,10 +498,11 @@ const Diseases = () => {
                   <textarea
                     required
                     rows="4"
-                    value={form.ligos_aprasymas}
+                    value={form.description}
                     onChange={(e) =>
-                      setForm({ ...form, ligos_aprasymas: e.target.value })
+                      setForm({ ...form, description: e.target.value })
                     }
+                    placeholder="Ligos aprašymas, požymiai ir ypatumai"
                   />
                 </div>
               </div>
