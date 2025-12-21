@@ -3,10 +3,10 @@ import { apiWrapper, notificationService } from './notificationService'
 
 // Vartotojo API funkcijos su pagerintu pranešimų valdymu
 export const userService = {
-  // Gauti vartotojo profilį su pranešimais
+  // Gauti vartotojo profilį
   async getProfile(showNotifications = false) {
     return await apiWrapper.executeWithNotification(
-      () => apiClient.get('/user/profile'),
+      () => apiClient.get('/Users/me'),
       {
         operation: 'fetch',
         entityType: 'user',
@@ -20,7 +20,7 @@ export const userService = {
   // Atnaujinti vartotojo profilį
   async updateProfile(userData) {
     return await apiWrapper.executeWithNotification(
-      () => apiClient.put('/user/profile', userData),
+      () => apiClient.put('/Users/me', userData),
       {
         operation: 'update',
         entityType: 'user',
@@ -31,38 +31,10 @@ export const userService = {
     )
   },
 
-  // Gauti vartotojo sveikatos statistikas
-  async getHealthStats() {
-    return await apiWrapper.executeWithNotification(
-      () => apiClient.get('/user/health-stats'),
-      {
-        operation: 'fetch',
-        entityType: 'duomenys',
-        showSuccess: false,
-        showError: true,
-        errorMessage: 'Nepavyko įkelti sveikatos statistikos'
-      }
-    )
-  },
-
-  // Atnaujinti sveikatos duomenis
-  async updateHealthData(healthData) {
-    return await apiWrapper.executeWithNotification(
-      () => apiClient.patch('/user/health-data', healthData),
-      {
-        operation: 'update',
-        entityType: 'duomenys',
-        showSuccess: true,
-        showError: true,
-        successMessage: 'Sveikatos duomenys sėkmingai atnaujinti'
-      }
-    )
-  },
-
   // Keisti slaptažodį
   async changePassword(passwordData) {
     return await apiWrapper.executeWithNotification(
-      () => apiClient.post('/user/change-password', passwordData),
+      () => apiClient.put('/Users/me/password', passwordData),
       {
         operation: 'update',
         entityType: 'slaptažodis',
@@ -73,33 +45,19 @@ export const userService = {
     )
   },
 
-  // Atnaujinti nustatymus
-  async updateSettings(settings) {
-    return await apiWrapper.executeWithNotification(
-      () => apiClient.patch('/user/settings', settings),
-      {
-        operation: 'update',
-        entityType: 'nustatymai',
-        showSuccess: true,
-        showError: true,
-        successMessage: 'Nustatymai sėkmingai atnaujinti'
-      }
-    )
-  },
-
   // Ištrinti paskyrą su patvirtinimu
   async deleteAccount() {
     const confirmed = window.confirm(
       'Ar tikrai norite ištrinti savo paskyrą? Šis veiksmas neatšaukiamas.'
     )
-    
+
     if (!confirmed) {
       notificationService.addInfo('Paskyros trynimas atšauktas')
       return { success: false, cancelled: true }
     }
 
     return await apiWrapper.executeWithNotification(
-      () => apiClient.delete('/user/account'),
+      () => apiClient.delete('/Users/me'),
       {
         operation: 'delete',
         entityType: 'paskyra',
@@ -110,46 +68,16 @@ export const userService = {
     )
   },
 
-  // Gauti prisijungimo istoriją
-  async getLoginHistory() {
+  // Gauti vartotojo gyvūnus
+  async getMyAnimals() {
     return await apiWrapper.executeWithNotification(
-      () => apiClient.get('/user/login-history'),
+      () => apiClient.get('/Users/me/animals'),
       {
         operation: 'fetch',
-        entityType: 'duomenys',
+        entityType: 'animals',
         showSuccess: false,
         showError: true,
-        errorMessage: 'Nepavyko įkelti prisijungimo istorijos'
-      }
-    )
-  },
-
-  // Atsijungti iš visų įrenginių
-  async logoutAllDevices() {
-    return await apiWrapper.executeWithNotification(
-      () => apiClient.post('/user/logout-all'),
-      {
-        operation: 'update',
-        entityType: 'sesija',
-        showSuccess: true,
-        showError: true,
-        successMessage: 'Sėkmingai atsijungta iš visų įrenginių'
-      }
-    )
-  },
-
-  // Eksportuoti vartotojo duomenis (GDPR)
-  async exportUserData() {
-    notificationService.addInfo('Pradedamas duomenų eksportavimas...')
-    
-    return await apiWrapper.executeWithNotification(
-      () => apiClient.get('/user/export-data'),
-      {
-        operation: 'fetch',
-        entityType: 'duomenys',
-        showSuccess: true,
-        showError: true,
-        successMessage: 'Duomenų eksportavimas sėkmingai pradėtas. Gausite el. laišką su atsisiuntimo nuoroda.'
+        errorMessage: 'Nepavyko įkelti jūsų gyvūnų'
       }
     )
   }

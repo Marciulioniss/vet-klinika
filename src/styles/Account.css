@@ -259,6 +259,106 @@
   accent-color: #2c5f2d;
 }
 
+/* Illnesses, Vaccinations, Products Used styling */
+.pet-section {
+  margin-top: 1rem;
+}
+
+.illness-item,
+.vaccination-item,
+.productused-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff, #fbfdfa);
+  border: 1px solid #eef2ed;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  margin-bottom: 0.75rem;
+}
+
+.illness-header,
+.vaccination-header,
+.productused-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.illness-header strong,
+.vaccination-header strong,
+.productused-header strong {
+  font-size: 1.05rem;
+  color: #214b31;
+}
+
+.illness-date,
+.vaccination-date {
+  background: #e9f6ef;
+  color: #1d6b37;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+}
+
+.illness-description,
+.vaccination-description {
+  color: #444;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  max-height: 3.6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.productused-dosage {
+  font-weight: 600;
+  color: #2b5b2f;
+  margin-left: 0.6rem;
+}
+
+.productused-meta {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.record-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid #e6ebe6;
+  background: white;
+  cursor: pointer;
+}
+
+.btn-icon.edit {
+  color: #2c5f2d;
+}
+
+.btn-icon.delete {
+  color: #c23b3b;
+}
+
+.products-used-list,
+.illnesses-list,
+.vaccinations-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+
 .setting-item select {
   margin-left: auto;
   padding: 0.5rem;
